@@ -1,4 +1,3 @@
-env_setup.py
 import hashlib
 import string
 import random
