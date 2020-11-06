@@ -10,11 +10,14 @@ import jwt
 
 from homework_api.forms import UserForm, LoginForm
 
+from homework_api.token_verification import token_required
+
 
 
 #Endpoint for Creating patients
 @app.route('/employees/create', methods = ['POST'])
-def create_employee():
+@token_required
+def create_employee(current_user_token):
     name = request.json['full_name']
     gender = request.json['gender']
     address = request.json['address']
@@ -32,20 +35,23 @@ def create_employee():
 
 # Endpoint for ALL employees
 @app.route('/employees', methods = ['GET'])
-def get_patients():
+@token_required
+def get_patients(current_user_token):
     employees = Employee.query.all()
     return jsonify(employees_schema.dump(employees))
 
 # Endpoint for ONE employee based on their ID
 @app.route('/employees/<id>', methods = ['GET'])
-def get_employee(id):
+@token_required
+def get_employee(current_user_token,id):
     employee = Employee.query.get(id)
     results = employee_schema.dump(employee)
     return jsonify(results)
 
 # Endpoint for updating employee data
 @app.route('/employees/update/<id>', methods = ['POST', 'PUT'])
-def update_employee(id):
+@token_required
+def update_employee(current_user_token,id):
     employee = Employee.query.get(id)
 
     #Update info below
@@ -64,7 +70,8 @@ def update_employee(id):
 
 # Endpoint for deleting employee data
 @app.route('/employees/delete/<id>', methods = ['DELETE'])
-def delete_employee(id):
+@token_required
+def delete_employee(current_user_token,id):
     employee = Employee.query.get(id)
 
     db.session.delete(employee)
@@ -99,7 +106,7 @@ def login():
     email = form.email.data
     password = form.password.data
 
-    logged_user = User.query.filter(User.email) == email.first()
+    logged_user = User.query.filter(User.email == email).first()
     if logged_user and check_password_hash(logged_user.password, password):
         login_user(logged_user)
         return redirect(url_for('get_key'))
@@ -115,3 +122,19 @@ def get_key():
     db.session.commit()
     results = token.decode('utf-8')
     return render_template('token.html', token = results)
+
+# Get a new API Key
+@app.route('/users/updatekey', methods = ['GET', 'POST', 'PUT'])
+def refresh_key():
+    refresh_key = {'refreshToken': jwt.encode({'public_id':current_user.id, 'email': current_user.email}, app.config['SECRET_KEY'])}
+    temp = refresh_key.get('refreshToken')
+    new_token = temp.decode('utf-8')
+
+    # Adding Refreshed Token to DB
+    user = User.query.filter_by(email = current_user.email).first()
+    user.token = new_token
+
+    db.session.add(user)
+    db.session.commit()
+
+    return render_template('token_refresh.html', new_token = new_token)

@@ -11,7 +11,7 @@ from flask_login import UserMixin
 # Import for Werkzeug Security
 from werkzeug.security import generate_password_hash, check_password_hash
 
-class Patient(db.Model):
+class Employee(db.Model):
     id = db.Column(db.Integer,primary_key = True)
     full_name = db.Column(db.String, nullable = False)
     gender = db.Column(db.String, nullable = False)
@@ -29,15 +29,15 @@ class Patient(db.Model):
         self.email = email
     
     def __repr__(self):
-        return f'Patient {self.full_name} has been added to the database.'
+        return f'Employee {self.full_name} has been added to the database.'
 
-class PatientSchema(ma.Schema):
+class EmployeeSchema(ma.Schema):
     class Meta:
         # Create fields that will show after data is digested
         fields = ['full_name','gender', 'address','ssn','blood_type','email']
 
-employee_schema = PatientSchema()
-employee_schema = PatientSchema(many = True)
+employee_schema = EmployeeSchema()
+employees_schema = EmployeeSchema(many = True)
 
 @login_manager.user_loader
 def load_user(user_id):
